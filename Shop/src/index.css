@@ -1,0 +1,14 @@
+@import "tailwindcss";
+/* Disable flipbook interactions on form elements */
+.auth-book input,
+.auth-book button:not([type="button"]),
+.auth-book select,
+.auth-book textarea {
+  pointer-events: auto !important;
+}
+
+/* Flip triggers only on specific buttons */
+.flip-trigger {
+  pointer-events: auto;
+  cursor: pointer;
+}
