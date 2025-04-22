@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import Navbar from './Navbar';
 import Hero from './Hero';
 import Footer from './Footer';
 import { UseBook } from '../components/UseBook';
-const HomePage = () => {
+import { useCart } from '../AllBooks.jsx/Cartcontext';
+// import defaultBookCover from '../assets/default-book-cover.jpg'; // Import a default image
 
-  // Sample featured books data
- const {data} = UseBook()
+const HomePage = () => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const { data, loading, error } = UseBook();
+  const { addToCart } = useCart();
 
   // Sample testimonials data
   const testimonials = [
@@ -48,11 +53,13 @@ const HomePage = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading books...</div>;
+  if (error) return <div className="min-h-screen flex items-center justify-center text-red-500">Error loading books: {error.message}</div>;
+
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar/>
-
- <Hero/>
+      <Navbar isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+      <Hero />
 
       {/* How It Works Section */}
       <section className="py-16 bg-white">
@@ -60,38 +67,23 @@ const HomePage = () => {
           <h2 className="text-3xl font-bold text-center mb-12">How BookBins Works</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Step 1 */}
-            <div className="text-center">
-              <div className="bg-green-100 w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-4">
-                <span className="text-green-700 text-2xl font-bold">1</span>
+            {[1, 2, 3].map((step) => (
+              <div key={step} className="text-center">
+                <div className="bg-green-100 w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-4">
+                  <span className="text-green-700 text-2xl font-bold">{step}</span>
+                </div>
+                <h3 className="text-xl font-semibold mb-2">
+                  {step === 1 && 'Browse Books'}
+                  {step === 2 && 'Order Online'}
+                  {step === 3 && 'Get Delivery'}
+                </h3>
+                <p className="text-gray-600">
+                  {step === 1 && 'Explore our vast collection of books across multiple categories.'}
+                  {step === 2 && 'Select your favorite books and place an order with secure payment options.'}
+                  {step === 3 && 'Receive your books at your doorstep and start reading right away!'}
+                </p>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Browse Books</h3>
-              <p className="text-gray-600">
-                Explore our vast collection of second-hand books across multiple categories.
-              </p>
-            </div>
-            
-            {/* Step 2 */}
-            <div className="text-center">
-              <div className="bg-green-100 w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-4">
-                <span className="text-green-700 text-2xl font-bold">2</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Order Online</h3>
-              <p className="text-gray-600">
-                Select your favorite books and place an order with secure payment options.
-              </p>
-            </div>
-            
-            {/* Step 3 */}
-            <div className="text-center">
-              <div className="bg-green-100 w-20 h-20 rounded-full mx-auto flex items-center justify-center mb-4">
-                <span className="text-green-700 text-2xl font-bold">3</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Get Delivery</h3>
-              <p className="text-gray-600">
-                Receive your books at your doorstep and start reading right away!
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -103,26 +95,34 @@ const HomePage = () => {
           <p className="text-center text-gray-600 mb-10">Discover quality second-hand books at amazing prices</p>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {data.slice(0,8).map(book => (
+            {data.slice(0, 8).map(book => (
               <div key={book.id} className="bg-white rounded-lg shadow-md overflow-hidden transition-transform hover:shadow-lg hover:-translate-y-1">
                 <div className="relative">
                   <img 
-                    src={book.image} 
-                    alt={book.title} 
-                    className="w-full h-64 object-cover"
+                    src={book.image || defaultBookCover} 
+                    alt={`Cover of ${book.title}`} 
+                    className="w-full h-64 object-cover cursor-pointer"
+                    onClick={() => navigate(`/browse/${book.id}`)}
                   />
-                  <div className="absolute top-2 right-2 bg-red-500 text-white text-sm font-bold px-2 py-1 rounded">
-                    {book.discount}% OFF
-                  </div>
+                  {book.discount && (
+                    <div className="absolute top-2 right-2 bg-red-500 text-white text-sm font-bold px-2 py-1 rounded">
+                      {book.discount}% OFF
+                    </div>
+                  )}
                 </div>
                 <div className="p-4">
                   <h3 className="font-semibold text-lg mb-1 truncate">{book.title}</h3>
                   <p className="text-gray-600 text-sm mb-2">{book.author}</p>
                   <div className="flex items-center">
                     <span className="text-green-700 font-bold">₹{book.price}</span>
-                    <span className="text-gray-500 line-through text-sm ml-2">₹{book.originalPrice}</span>
+                    {book.originalPrice && (
+                      <span className="text-gray-500 line-through text-sm ml-2">₹{book.originalPrice}</span>
+                    )}
                   </div>
-                  <button className="mt-3 w-full bg-green-700 text-white py-2 rounded hover:bg-green-800">
+                  <button 
+                    onClick={() => addToCart(book)}
+                    className="mt-3 w-full bg-green-700 text-white py-2 rounded hover:bg-green-800 transition-colors"
+                  >
                     Add to Cart
                   </button>
                 </div>
@@ -131,9 +131,12 @@ const HomePage = () => {
           </div>
           
           <div className="text-center mt-10">
-            <a href='/browse' className="border-2 border-green-700 text-green-700 px-6 py-2 rounded-md hover:bg-green-50 font-medium">
+            <button 
+              onClick={() => navigate('/browse')}
+              className="border-2 border-green-700 text-green-700 px-6 py-2 rounded-md hover:bg-green-50 font-medium transition-colors"
+            >
               View All Books
-            </a>
+            </button>
           </div>
         </div>
       </section>
@@ -145,13 +148,13 @@ const HomePage = () => {
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
             {categories.map((category, index) => (
-              <a 
-                key={index} 
-                href="#" 
+              <button
+                key={index}
+                onClick={() => navigate(`/browse?category=${category}`)}
                 className="bg-green-50 hover:bg-green-100 text-green-800 text-center py-4 rounded-lg transition-colors"
               >
                 {category}
-              </a>
+              </button>
             ))}
           </div>
         </div>
@@ -168,34 +171,31 @@ const HomePage = () => {
                 Sell them on BookBins and make some extra cash while helping other readers find affordable books!
               </p>
               <ul className="mb-6 space-y-2">
-                <li className="flex items-center">
-                  <svg className="w-5 h-5 text-green-700 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                  </svg>
-                  Free listing of books
-                </li>
-                <li className="flex items-center">
-                  <svg className="w-5 h-5 text-green-700 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                  </svg>
-                  Hassle-free pickup
-                </li>
-                <li className="flex items-center">
-                  <svg className="w-5 h-5 text-green-700 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                  </svg>
-                  Quick payment to your account
-                </li>
+                {[
+                  "Free listing of books",
+                  "Hassle-free pickup",
+                  "Quick payment to your account"
+                ].map((item, index) => (
+                  <li key={index} className="flex items-center">
+                    <svg className="w-5 h-5 text-green-700 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+                    </svg>
+                    {item}
+                  </li>
+                ))}
               </ul>
-              <a href="#" className="bg-amber-500 text-white px-6 py-3 rounded-md hover:bg-amber-600 inline-block font-medium">
+              <button 
+                onClick={() => navigate('/sell')}
+                className="bg-amber-500 text-white px-6 py-3 rounded-md hover:bg-amber-600 inline-block font-medium transition-colors"
+              >
                 Start Selling
-              </a>
+              </button>
             </div>
             <div className="md:w-1/2">
               <img 
-                src="/api/placeholder/500/400" 
-                alt="Selling Books" 
-                className="rounded-lg shadow-lg"
+                src="/images/selling-books.jpg" 
+                alt="Person selling used books" 
+                className="rounded-lg shadow-lg w-full"
               />
             </div>
           </div>
@@ -211,7 +211,6 @@ const HomePage = () => {
             {testimonials.map(testimonial => (
               <div key={testimonial.id} className="bg-white p-6 rounded-lg shadow">
                 <div className="mb-4 text-amber-500">
-                  {/* 5 stars */}
                   {Array(5).fill().map((_, i) => (
                     <span key={i} className="text-xl">★</span>
                   ))}
@@ -233,22 +232,27 @@ const HomePage = () => {
           <div className="max-w-2xl mx-auto text-center">
             <h2 className="text-3xl font-bold mb-4">Join Our Newsletter</h2>
             <p className="mb-6">Stay updated with new arrivals, special offers, and reading recommendations.</p>
-            <div className="flex flex-col sm:flex-row sm:justify-center space-y-3 sm:space-y-0">
+            <form className="flex flex-col sm:flex-row sm:justify-center gap-3">
               <input 
                 type="email" 
                 placeholder="Enter your email address" 
-                className="px-4 py-3 sm:rounded-r-none sm:rounded-l-md text-gray-800 focus:outline-none flex-grow"
+                className="px-4 py-3 rounded sm:rounded-r-none text-gray-800 focus:outline-none flex-grow"
+                required
               />
-              <button className="bg-amber-500 hover:bg-amber-600 px-6 py-3 sm:rounded-l-none sm:rounded-r-md font-medium">
+              <button 
+                type="submit" 
+                className="bg-amber-500 hover:bg-amber-600 px-6 py-3 rounded sm:rounded-l-none font-medium transition-colors"
+              >
                 Subscribe
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </section>
 
-<Footer/>
+      <Footer />
     </div>
-  )
-}
-export default HomePage; 
+  );
+};
+
+export default HomePage;

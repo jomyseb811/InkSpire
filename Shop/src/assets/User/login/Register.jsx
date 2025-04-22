@@ -47,6 +47,8 @@ export default function RegisterForm() {
   
   const response = await axios.post('http://localhost:3000/user', userData);
   
+  localStorage.setItem("loggedUserId", response.data.id);
+
         console.log("registration success", userData);
         toast.success("Registered successfully");
   
@@ -115,6 +117,7 @@ export default function RegisterForm() {
         <button
         type="button"
         className="flip-trigger font-medium text-blue-600 hover:text-blue-500"
+        onClick={()=>navigate('/log')}
       >
   Login
 </button>

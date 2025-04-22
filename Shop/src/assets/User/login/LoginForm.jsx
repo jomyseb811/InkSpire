@@ -4,38 +4,55 @@ import { loginSchema } from './ValidationSchemas';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useEffect } from 'react';
 
-export default function LoginForm({ flipBookRef, flipBack }) {
+export default function LoginForm() {
 
 const navigate =useNavigate()
+useEffect(() => {
+  const userId = localStorage.getItem('loggedUserId');
+  if (userId) {
+    navigate('/');
+  }
+}, [navigate]);
+
+
 
   const formik = useFormik({
     initialValues: { email: '', password: '' },
 
     validationSchema: loginSchema,
 
-    onSubmit : async (values) =>{
-    try{
+    onSubmit: async (values) => {
+      try {
+        const response = await axios('http://localhost:3000/user');
+        const user = response.data.find(
+          (u) => u.email === values.email && u.password === values.password
+        );
 
-      const response =  await axios('http://localhost:3000/user')
-      const user = response.data.find(
-        (u) => u.email === values.email && u.password === values.password
-      );
-
-      localStorage.setItem('email',user.email)
-      localStorage.setItem('password',user.password)
-      console.log(user.username)
-      toast.success(`Welcome,${user.username}`)
-      
-      navigate('/home')
-    } catch(error){
-      console.error('Login error :',error);
-      toast.error('An error occured. please try again later')
-      
-    }
+        console.log(user);
+        
+        
+        if (user) {
+          localStorage.setItem('loggedUserId', user.id); // ✅ set after finding user
+          localStorage.setItem('email', user.email);
+          localStorage.setItem('password', user.password);
+          // console.log(localStorage.getItem(loggedUserId));
+          
+          console.log(user.username);
+          toast.success(`Welcome, ${user.username}`);
+          navigate('/');
+        } else {
+          toast.error('Invalid email or password');
    }
-  });
+      } catch (error) {
+        console.error('Login error:', error);
+        toast.error('An error occurred. Please try again later');
+      }
+  }
+    });
 
+    
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <div className="bg-white p-6 rounded-xl shadow-md w-full max-w-sm">
@@ -70,8 +87,8 @@ const navigate =useNavigate()
           <p className="text-sm text-center text-gray-600 mt-4">
             Don't have an account?{' '}
             <button
+            onClick={()=>navigate('/')}
               type="button"
-              onClick={flipBack}
               className="flip-trigger font-medium text-green-600 hover:text-green-500"
             >
               Register
@@ -81,4 +98,4 @@ const navigate =useNavigate()
       </div>
     </div>
   );
-}
+    }
